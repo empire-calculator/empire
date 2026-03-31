@@ -124,6 +124,7 @@
 </div>
 
 <script>
+    let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
     // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
     const quotes = [
         { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
@@ -136,10 +137,7 @@
         { t: "«Женщине нужны украшения, чтобы напоминать ей о том, как она прекрасна»", a: "Дженнифер Лопес" },
         { t: "«Элегантность не в том, чтобы выделяться, а в том, чтобы запоминаться»", a: "Джорджо Армани" },
     ];
-
-    let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
-
-    function setQuote() {
+ function setQuote() {
         const q = quotes[Math.floor(Math.random() * quotes.length)];
         document.getElementById('qText').innerText = q.t;
         document.getElementById('qAuthor').innerText = q.a;
@@ -214,9 +212,24 @@
     }
 
     window.onload = () => {
-        setQuote(); // Цитата выбирается сразу при загрузке
-        document.getElementById('masterKey').value = localStorage.getItem('empire_master_key') || '';
-        renderStock();
+        // 1. ПЕРВЫМ ДЕЛОМ рисуем базу (теперь она в приоритете)
+        if (typeof renderStock === "function") {
+            renderStock();
+        }
+
+        // 2. Остальное — в защищенном блоке (чтобы ошибки не мешали базе)
+        try {
+            if (typeof setQuote === "function") {
+                setQuote();
+            }
+            
+            const mkInput = document.getElementById('masterKey');
+            if (mkInput) {
+                mkInput.value = localStorage.getItem('empire_master_key') || '';
+            }
+        } catch (e) {
+            console.warn("Ошибка в доп. элементах, но база загружена:", e);
+        }
     };
 function exportData() {
         if (stockData.length === 0) return alert("База пуста, нечего копировать!");
