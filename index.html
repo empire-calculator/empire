@@ -58,13 +58,9 @@
         <div style="font-size: 0.7em; color: var(--berry); font-weight: 700;">КОВАЛЁВА • ИМПЕРИЯ УКРАШЕНИЙ</div>
     </div>
 
-    <div class="sync-panel">
-        <div class="sync-row">
-            <label style="color:var(--berry); margin:0; font-size: 10px;">🔑 МАСТЕР-КЛЮЧ:</label>
-            <input type="password" id="masterKey" placeholder="Придумайте пароль" onchange="localStorage.setItem('empire_master_key', this.value)">
-        </div>
-        <div style="font-size: 10px; color: #666;">Введите любой ключ для синхронизации данных между устройствами.</div>
-        <button class="btn-sync" onclick="syncData()">Синхронизировать</button>
+    <div class="sync-panel" style="display: flex; gap: 10px; background: #fffaf0; border: 1px solid #d4af37; padding: 15px; margin-bottom: 20px;">
+        <button onclick="exportData()" style="flex: 1; background: #444; color: white; padding: 10px; font-size: 9px; cursor: pointer;">📤 СКОПИРОВАТЬ БАЗУ С ТЕЛЕФОНА</button>
+        <button onclick="importData()" style="flex: 1; background: var(--berry); color: white; padding: 10px; font-size: 9px; cursor: pointer;">📥 ЗАГРУЗИТЬ БАЗУ НА КОМПЬЮТЕР</button>
     </div>
 
     <div class="card">
@@ -131,12 +127,14 @@
     // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
     const quotes = [
         { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
-        { t: "«Чтобы быть незаменимой, нужно постоянно меняться»", a: "Коко Шанель" },
+        { t: "«Создайте свой собственный стиль. Пусть он будет уникальным для вас»", a: "Анна Винтур" },
         { t: "«Мода — это не только платья. Мода — это то, что в воздухе»", a: "Коко Шанель" },
         { t: "«Элегантность — это единственный тип красоты, который никогда не увядает»", a: "Одри Хепберн" },
         { t: "«У вас не будет второго шанса произвести первое впечатление»", a: "Коко Шанель" },
-        { t: "«Я не занимаюсь модой. Я сама — мода»", a: "Коко Шанель" },
-        { t: "«Красота начинает проявляться тогда, когда вы решаете быть собой»", a: "Коко Шанель" }
+        { t: "«Настоящая роскошь требует настоящих материалов и искренности мастера»", a: "Кристиан Диор" },
+        { t: "«Успех — это способность шагать от неудачи к неудаче, не теряя энтузиазма»", a: "Уинстон Черчилль" },
+        { t: "«Женщине нужны украшения, чтобы напоминать ей о том, как она прекрасна»", a: "Дженнифер Лопес" },
+        { t: "«Элегантность не в том, чтобы выделяться, а в том, чтобы запоминаться»", a: "Джорджо Армани" },
     ];
 
     let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
@@ -220,42 +218,35 @@
         document.getElementById('masterKey').value = localStorage.getItem('empire_master_key') || '';
         renderStock();
     };
-async function syncData() {
-        const key = document.getElementById('masterKey').value;
-        if (!key) return alert("Введите ключ!");
-        localStorage.setItem('empire_master_key', key);
+function exportData() {
+        if (stockData.length === 0) return alert("База пуста, нечего копировать!");
+        // Превращаем базу в зашифрованную строку
+        const dataStr = btoa(unescape(encodeURIComponent(JSON.stringify(stockData))));
         
-        const btn = document.querySelector('.btn-sync');
-        btn.innerText = "⏳...";
+        // Пытаемся скопировать в буфер обмена
+        const el = document.createElement('textarea');
+        el.value = dataStr;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        
+        alert("ГОТОВО! Код базы скопирован в память телефона. \n\nОтправьте этот длинный текст себе в Телеграм/Max, скопируйте его на компьютере и нажмите 'ЗАГРУЗИТЬ БАЗУ'.");
+    }
 
-        // Создаем уникальный "адрес" на базе твоего ключа
-        const storageKey = 'empire_cloud_' + btoa(key).substring(0, 10);
-
+    function importData() {
+        const code = prompt("Вставьте код базы, который вы переслали с телефона:");
+        if (!code) return;
         try {
-            // 1. Если на устройстве ЕСТЬ данные — ОТПРАВЛЯЕМ их в "облако" браузера
-            if (stockData.length > 0) {
-                // Мы имитируем облако через глобальное хранилище или просто подтверждаем локальный сейв
-                localStorage.setItem(storageKey, JSON.stringify(stockData));
-                
-                // ВАЖНО: Чтобы данные перелетели, нам нужно их "протолкнуть"
-                // Для этого мы используем маленькую хитрость с обновлением страницы
-                alert("ДАННЫЕ СОХРАНЕНЫ! Теперь на компьютере введите тот же ключ и нажмите Синхронизировать.");
-            } else {
-                // 2. Если на устройстве ПУСТО — ИЩЕМ в памяти по ключу
-                const savedData = localStorage.getItem(storageKey);
-                if (savedData) {
-                    stockData = JSON.parse(savedData);
-                    save();
-                    alert("МАГИЯ! База подтянулась.");
-                } else {
-                    alert("В облаке пока пусто. Сначала нажмите Синхронизировать на телефоне.");
-                }
+            const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
+            if (Array.isArray(decoded)) {
+                stockData = decoded;
+                save();
+                alert("МАГИЯ! " + stockData.length + " поз. фурнитуры перенесено успешно.");
+                renderStock();
             }
         } catch(e) {
-            alert("Ошибка синхронизации.");
-        } finally {
-            btn.innerText = "СИНХРОНИЗИРОВАТЬ";
-            renderStock();
+            alert("Ошибка! Код скопирован не полностью или поврежден.");
         }
     }
 </script>
