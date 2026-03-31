@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Empire Manager | Ковалёва</title>
+    <style>
+        :root { --berry: #960018; --green: #1a4d2e; --text: #1a1a1a; --danger: #ff0000; }
+        body { font-family: sans-serif; background: #ffffff; color: var(--text); padding: 15px; margin: 0; }
+        .app-container { max-width: 800px; margin: auto; }
+        
+        .quote-top { text-align: center; margin-bottom: 20px; padding: 10px; border-bottom: 1px double #eee; min-height: 50px; }
+        .quote-text { font-style: italic; font-size: 14px; color: #444; margin-bottom: 4px; display: block; }
+        .quote-author { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--berry); font-weight: 700; }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { font-size: 1.1em; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .sync-panel { background: #fdf2f2; padding: 15px; margin-bottom: 20px; border: 1px dashed var(--berry); }
+        .sync-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+        .sync-row input { flex: 1; height: 30px; border: 1px solid #ccc; padding: 0 10px; }
+        
+        .card { background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        h2 { font-size: 0.85em; font-weight: 700; margin-bottom: 15px; color: var(--berry); text-transform: uppercase; border-left: 3px solid var(--berry); padding-left: 12px; }
+        
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        input, select { height: 38px; padding: 0 10px; border: 1px solid #ddd; font-size: 14px; width: 100%; box-sizing: border-box; }
+        label { display: block; font-size: 9px; text-transform: uppercase; color: #999; margin-bottom: 4px; font-weight: 700; }
+        .sub-label { font-size: 8px; color: #999; display: block; margin-top: 2px; }
+        
+        button { padding: 14px; cursor: pointer; font-weight: 700; text-transform: uppercase; font-size: 10px; border: none; }
+        .btn-berry { background: var(--berry); color: white; width: 100%; }
+        .btn-add-line { background: #f9f9f9; border: 1px solid #ddd; color: #444; margin-top: 10px; width: 100%; }
+        
+        .stock-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .stock-table td { padding: 10px; border-bottom: 1px solid #fafafa; }
+        .unit-price-tag { font-size: 10px; color: #888; }
+        
+        .calc-row { display: grid; grid-template-columns: 3fr 1.2fr 35px; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .total-box { background: var(--berry); color: white; padding: 30px 20px; text-align: center; margin-top: 20px; }
+        .price-display { font-size: 32px; font-weight: 700; display: block; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        footer { text-align: center; margin-top: 40px; padding-bottom: 30px; font-size: 10px; }
+        .btn-tg-link { display: inline-block; background: var(--berry); color: white; padding: 12px 30px; text-decoration: none; font-weight: 700; font-size: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="quote-top">
+        <span id="qText" class="quote-text">...</span>
+        <span id="qAuthor" class="quote-author">...</span>
+    </div>
+
+    <div class="header">
+        <h1>Калькулятор расчета стоимости</h1>
+        <div style="font-size: 0.7em; color: var(--berry); font-weight: 700;">КОВАЛЁВА • ИМПЕРИЯ УКРАШЕНИЙ</div>
+    </div>
+
+    <div class="sync-panel">
+        <div class="sync-row">
+            <label style="color:var(--berry); margin:0; font-size: 10px;">🔑 МАСТЕР-КЛЮЧ:</label>
+            <input type="password" id="masterKey" placeholder="Придумайте пароль" onchange="localStorage.setItem('empire_master_key', this.value)">
+        </div>
+        <div style="font-size: 10px; color: #666;">Введите любой ключ для синхронизации данных между устройствами.</div>
+    </div>
+
+    <div class="card">
+        <h2>👑 Сокровищница (Материалы & Закупки)</h2>
+        <div class="grid-inputs">
+            <div><label>Название</label><input type="text" id="itemName"></div>
+            <div><label>Закупка (₽)</label><input type="number" id="itemPrice"></div>
+            <div><label>Кол-во</label><input type="number" id="itemQty"></div>
+            <div><label>Единица</label>
+                <select id="itemUnit">
+                    <option value="шт">шт</option>
+                    <option value="грамм">грамм</option>
+                    <option value="см">см</option>
+                    <option value="метр">метр</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-berry" onclick="addItemToStock()">Добавить в коллекцию</button>
+        <div style="max-height: 200px; overflow-y: auto; margin-top: 15px;">
+            <table class="stock-table"><tbody id="stockTableBody"></tbody></table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>💎 Расчет стоимости изделия</h2>
+        <div id="calculatorRows"></div>
+        <button class="btn-add-line" onclick="addNewRow()">+ Добавить материал</button>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 20px;">
+            <div><label>Работа (мин)</label><input type="number" id="inputWork" value="60" oninput="runCalc()"></div>
+            <div><label>Час мастера (₽)</label><input type="number" id="inputRate" value="1000" oninput="runCalc()"></div>
+            <div><label>Упаковка (₽)</label><input type="number" id="inputPack" value="0" oninput="runCalc()"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px;">
+            <div>
+                <label>Наценка (коэфф.)</label>
+                <input type="number" id="inputMark" value="2.5" step="0.1" oninput="runCalc()">
+                <span class="sub-label">применяется только к материалам</span>
+            </div>
+            <div><label>Налог (%)</label><input type="number" id="inputTax" value="0" oninput="runCalc()"></div>
+            <div><label>Скидка (%)</label><input type="number" id="inputDisc" value="0" oninput="runCalc()"></div>
+        </div>
+
+        <div class="total-box">
+            <span id="displayOldPrice" style="text-decoration:line-through; opacity:0.6; font-size:14px; height:18px; display:block"></span>
+            <span style="font-size:8px; text-transform:uppercase;">Цена продажи</span>
+            <span class="price-display" id="displayFinal">0 ₽</span>
+            <div class="stats-grid">
+                <div><span style="font-size:8px; opacity:0.8">Себест.</span><div id="resCost" style="font-size:11px; font-weight:600">0 ₽</div></div>
+                <div><span style="font-size:8px; opacity:0.8">Прибыль</span><div id="resProfit" style="font-size:11px; font-weight:600">0 ₽</div></div>
+                <div><span style="font-size:8px; opacity:0.8">Налог</span><div id="resTax" style="font-size:11px; font-weight:600">0 ₽</div></div>
+            </div>
+        </div>
+        <button style="background:var(--green); color:white; width:100%; margin-top:10px; padding:18px;" onclick="confirmDeduction()">✅ Создать / Списать остатки</button>
+    </div>
+
+    <footer>
+        <div style="font-weight:700; color:var(--berry);">КОВАЛЁВА • ИМПЕРИЯ УКРАШЕНИЙ</div>
+        <a href="https://t.me/+KXgdfOXjzXJlMTgy" target="_blank" class="btn-tg-link">TELEGRAM КАНАЛ</a>
+    </footer>
+</div>
+
+<script>
+    // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
+    const quotes = [
+        { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
+        { t: "«Чтобы быть незаменимой, нужно постоянно меняться»", a: "Коко Шанель" },
+        { t: "«Мода — это не только платья. Мода — это то, что в воздухе»", a: "Коко Шанель" },
+        { t: "«Элегантность — это единственный тип красоты, который никогда не увядает»", a: "Одри Хепберн" },
+        { t: "«У вас не будет второго шанса произвести первое впечатление»", a: "Коко Шанель" },
+        { t: "«Я не занимаюсь модой. Я сама — мода»", a: "Коко Шанель" },
+        { t: "«Красота начинает проявляться тогда, когда вы решаете быть собой»", a: "Коко Шанель" }
+    ];
+
+    let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
+
+    function setQuote() {
+        const q = quotes[Math.floor(Math.random() * quotes.length)];
+        document.getElementById('qText').innerText = q.t;
+        document.getElementById('qAuthor').innerText = q.a;
+    }
+
+    function save() {
+        localStorage.setItem('empire_v2', JSON.stringify(stockData));
+        renderStock();
+    }
+
+    function addItemToStock() {
+        const nInput = document.getElementById('itemName'), pInput = document.getElementById('itemPrice'), qInput = document.getElementById('itemQty'), uInput = document.getElementById('itemUnit');
+        const n = nInput.value, p = parseFloat(pInput.value), q = parseFloat(qInput.value);
+        if(!n || isNaN(p) || isNaN(q)) return alert("Заполни поля!");
+        stockData.push({ id: Date.now(), name: n, unitPrice: p/q, qty: q, unit: uInput.value });
+        save();
+        nInput.value = ''; pInput.value = ''; qInput.value = '';
+    }
+
+    function renderStock() {
+        const body = document.getElementById('stockTableBody'); body.innerHTML = '';
+        stockData.forEach(i => {
+            body.innerHTML += `<tr style="${i.qty <= 0 ? 'color:red' : ''}">
+                <td><b>${i.name}</b></td>
+                <td>${i.qty} ${i.unit}</td>
+                <td><span class="unit-price-tag">${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}</span></td>
+                <td style="text-align:right; color:#ccc; cursor:pointer;" onclick="deleteItem(${i.id})">✕</td></tr>`;
+        });
+        updateSelectors(); runCalc();
+    }
+
+    function deleteItem(id) { if(confirm('Удалить?')) { stockData = stockData.filter(i => i.id !== id); save(); } }
+
+    function updateSelectors() {
+        document.querySelectorAll('.row-select').forEach(s => {
+            const v = s.value;
+            // ТЕПЕРЬ ТУТ ОТОБРАЖАЕТСЯ ЦЕНА ЗА ЕДИНИЦУ ПРЯМО ПРИ ВЫБОРЕ
+            s.innerHTML = '<option value="">Выбрать материал...</option>' + 
+                stockData.map(i => `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit})</option>`).join('');
+            s.value = v;
+        });
+    }
+
+    function addNewRow() {
+        const div = document.createElement('div'); div.className = 'calc-row';
+        div.innerHTML = `<select class="row-select" onchange="runCalc()"></select><input type="number" class="row-qty" placeholder="Кол" oninput="runCalc()"><span style="cursor:pointer; padding-left:10px" onclick="this.parentElement.remove(); runCalc()">✕</span>`;
+        document.getElementById('calculatorRows').appendChild(div); updateSelectors();
+    }
+
+    function runCalc() {
+        let m = 0; document.querySelectorAll('.calc-row').forEach(r => {
+            const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, item = stockData.find(x => x.id == id);
+            if(item) m += item.unitPrice * q;
+        });
+        const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value),
+              pk = parseFloat(document.getElementById('inputPack').value) || 0, mk = parseFloat(document.getElementById('inputMark').value) || 1,
+              tx = parseFloat(document.getElementById('inputTax').value) || 0, ds = parseFloat(document.getElementById('inputDisc').value) || 0;
+        const base = (m * mk) + w + pk, full = tx < 100 ? base / (1 - (tx / 100)) : base, final = full * (1 - (ds / 100));
+        document.getElementById('displayOldPrice').innerText = ds > 0 ? Math.round(full) + " ₽" : "";
+        document.getElementById('displayFinal').innerText = Math.round(final) + " ₽";
+        document.getElementById('resCost').innerText = Math.round(m + pk) + " ₽";
+        document.getElementById('resProfit').innerText = Math.round(final - (m + pk) - (final * (tx/100))) + " ₽";
+        document.getElementById('resTax').innerText = Math.round(final * (tx/100)) + " ₽";
+    }
+
+    function confirmDeduction() {
+        document.querySelectorAll('.calc-row').forEach(r => {
+            const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, i = stockData.find(x => x.id == id);
+            if(i) i.qty = Math.round((i.qty - q) * 100) / 100;
+        });
+        save(); alert('Готово! Сокровищница обновлена.');
+    }
+
+    window.onload = () => {
+        setQuote(); // Цитата выбирается сразу при загрузке
+        document.getElementById('masterKey').value = localStorage.getItem('empire_master_key') || '';
+        renderStock();
+    };
+</script>
+</body>
+</html>
