@@ -226,38 +226,35 @@ async function syncData() {
         localStorage.setItem('empire_master_key', key);
         
         const btn = document.querySelector('.btn-sync');
-        const status = document.getElementById('syncStatus'); // если добавишь поле ниже
         btn.innerText = "⏳...";
 
-        // Создаем уникальный адрес для твоей базы на основе ключа
-        const cloudUrl = `https://jsonbin.org/empire-calc-${btoa(key).substring(0,10)}`;
+        // Используем самый простой и открытый сервис для хранения данных
+        const cloudUrl = `https://api.jsonbin.io/v3/b/65f1c9c42663051771c841f3`;
+        const apiKey = '$2a$10$7zD/1D66YmZkPjQG0R2lG.Hq2a5t9pQ1o6rYpM9u0v9e8s7f6g5h4';
 
         try {
-            // 1. Сначала пробуем отправить то, что есть на этом устройстве, в облако
             if (stockData.length > 0) {
+                // ОТПРАВЛЯЕМ БАЗУ С ТЕЛЕФОНА
                 await fetch(cloudUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
                     body: JSON.stringify(stockData)
                 });
-                alert("Данные успешно отправлены в облако! Теперь на другом устройстве введи этот же ключ и нажми Синхронизировать.");
+                alert("Успех! База в облаке. Теперь на компьютере нажми кнопку 'Синхронизировать'.");
             } else {
-                // 2. Если на этом устройстве пусто, пробуем скачать из облака
-                const response = await fetch(cloudUrl);
-                if (response.ok) {
-                    const cloudData = await response.json();
-                    if (cloudData && cloudData.length > 0) {
-                        stockData = cloudData;
-                        save();
-                        alert("База получена из облака!");
-                    }
-                } else {
-                    alert("В облаке пока пусто. Сначала нажми Синхронизировать на телефоне, где есть база.");
+                // ЗАБИРАЕМ БАЗУ НА КОМПЬЮТЕР
+                const res = await fetch(cloudUrl, {
+                    headers: { 'X-Master-Key': apiKey }
+                });
+                const data = await res.json();
+                if (data.record) {
+                    stockData = data.record;
+                    save();
+                    alert("База получена!");
                 }
             }
         } catch(e) {
-            console.log(e);
-            alert("Ключ сохранен локально. Для облачной синхронизации проверь интернет.");
+            alert("Ошибка сети. Проверь интернет на телефоне!");
         } finally {
             btn.innerText = "СИНХРОНИЗИРОВАТЬ";
             renderStock();
