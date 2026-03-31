@@ -124,7 +124,16 @@
 </div>
 
 <script>
-    let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
+    // 1. ЗАГРУЗКА С ПРОВЕРКОЙ (замени первую строку этим)
+    let stockData = [];
+    try {
+        const saved = localStorage.getItem('empire_v2');
+        if (saved && saved !== "[]") {
+            stockData = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.error("Ошибка загрузки базы:", e);
+    }
     // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
     const quotes = [
         { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
