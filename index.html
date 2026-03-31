@@ -228,36 +228,41 @@ async function syncData() {
         const btn = document.querySelector('.btn-sync');
         btn.innerText = "⏳...";
 
-        // Уникальный адрес для вашей базы на основе ключа
+        // Уникальный ID на основе ключа
         const id = btoa('emp_' + key).substring(0, 8).toLowerCase();
         const cloudUrl = `https://api.myjson.online/v1/records/${id}`;
 
         try {
+            // 1. СНАЧАЛА ВСЕГДА ПРОВЕРЯЕМ, ЧТО В ОБЛАКЕ
+            const res = await fetch(cloudUrl);
+            const result = await res.json();
+
+            if (res.ok && result.data && result.data.length > 0) {
+                // Если в облаке данные есть, а на компе пусто — ЗАБИРАЕМ
+                if (stockData.length === 0 || confirm("В облаке найдены данные. Заменить текущий список?")) {
+                    stockData = result.data;
+                    save();
+                    alert("МАГИЯ! База получена из облака!");
+                    btn.innerText = "СИНХРОНИЗИРОВАТЬ";
+                    renderStock();
+                    return; // Выходим, чтобы не перезаписать облако пустотой
+                }
+            }
+
+            // 2. ЕСЛИ В ОБЛАКЕ ПУСТО ИЛИ МЫ ХОТИМ ОБНОВИТЬ ОБЛАКО С ТЕЛЕФОНА
             if (stockData.length > 0) {
-                // ОТПРАВЛЯЕМ БАЗУ
                 await fetch(cloudUrl, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data: stockData })
                 });
-                alert("УСПЕХ! База отправлена в облако. Теперь на другом устройстве введите этот же ключ и нажмите Синхронизировать.");
+                alert("УСПЕХ! База отправлена в облако.");
             } else {
-                // ЗАБИРАЕМ БАЗУ
-                const res = await fetch(cloudUrl);
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.data) {
-                        stockData = result.data;
-                        save();
-                        alert("МАГИЯ! База получена из облака!");
-                    }
-                } else {
-                    alert("В облаке пока пусто. Сначала нажмите Синхронизировать на телефоне.");
-                }
+                alert("В облаке пусто, и на этом устройстве тоже ничего нет.");
             }
+
         } catch(e) {
-            // Если сервис недоступен, пробуем запасной вариант (простое сохранение ключа)
-            alert("Ключ привязан! Но для передачи данных проверьте интернет.");
+            alert("Ошибка связи. Проверьте интернет!");
         } finally {
             btn.innerText = "СИНХРОНИЗИРОВАТЬ";
             renderStock();
