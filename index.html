@@ -223,19 +223,44 @@
 async function syncData() {
         const key = document.getElementById('masterKey').value;
         if (!key) return alert("Введите ключ!");
-        
         localStorage.setItem('empire_master_key', key);
+        
         const btn = document.querySelector('.btn-sync');
+        const status = document.getElementById('syncStatus'); // если добавишь поле ниже
         btn.innerText = "⏳...";
 
+        // Создаем уникальный адрес для твоей базы на основе ключа
+        const cloudUrl = `https://jsonbin.org/empire-calc-${btoa(key).substring(0,10)}`;
+
         try {
-            // Здесь логика сохранения в облако, которую я добавил
-            alert("Синхронизация запущена! Теперь данные будут доступны на всех устройствах с этим ключом.");
-            renderStock();
+            // 1. Сначала пробуем отправить то, что есть на этом устройстве, в облако
+            if (stockData.length > 0) {
+                await fetch(cloudUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockData)
+                });
+                alert("Данные успешно отправлены в облако! Теперь на другом устройстве введи этот же ключ и нажми Синхронизировать.");
+            } else {
+                // 2. Если на этом устройстве пусто, пробуем скачать из облака
+                const response = await fetch(cloudUrl);
+                if (response.ok) {
+                    const cloudData = await response.json();
+                    if (cloudData && cloudData.length > 0) {
+                        stockData = cloudData;
+                        save();
+                        alert("База получена из облака!");
+                    }
+                } else {
+                    alert("В облаке пока пусто. Сначала нажми Синхронизировать на телефоне, где есть база.");
+                }
+            }
         } catch(e) {
-            alert("Ошибка связи с базой.");
+            console.log(e);
+            alert("Ключ сохранен локально. Для облачной синхронизации проверь интернет.");
         } finally {
             btn.innerText = "СИНХРОНИЗИРОВАТЬ";
+            renderStock();
         }
     }
 </script>
