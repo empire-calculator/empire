@@ -59,8 +59,8 @@
     </div>
 
     <div class="sync-panel" style="display: flex; gap: 10px; background: #fffaf0; border: 1px solid #d4af37; padding: 15px; margin-bottom: 20px;">
-        <button onclick="exportData()" style="flex: 1; background: #444; color: white; padding: 10px; font-size: 9px; cursor: pointer;">📤 СКОПИРОВАТЬ БАЗУ С ТЕЛЕФОНА</button>
-        <button onclick="importData()" style="flex: 1; background: var(--berry); color: white; padding: 10px; font-size: 9px; cursor: pointer;">📥 ЗАГРУЗИТЬ БАЗУ НА КОМПЬЮТЕР</button>
+        <button onclick="exportData()" style="flex: 1; background: #444; color: white; padding: 10px; font-size: 9px; cursor: pointer;">📤 СКОПИРОВАТЬ БАЗУ</button>
+        <button onclick="importData()" style="flex: 1; background: var(--berry); color: white; padding: 10px; font-size: 9px; cursor: pointer;">📥 ЗАГРУЗИТЬ БАЗУ</button>
     </div>
 
     <div class="card">
@@ -231,7 +231,7 @@ function exportData() {
         document.execCommand('copy');
         document.body.removeChild(el);
         
-        alert("ГОТОВО! Код базы скопирован в память телефона. \n\nОтправьте этот длинный текст себе в Телеграм/Max, скопируйте его на компьютере и нажмите 'ЗАГРУЗИТЬ БАЗУ'.");
+        alert("ГОТОВО! Код базы скопирован в память устройства. \n\nОтправьте этот длинный текст себе в Телеграм/Max, скопируйте его на компьютере/телефоне и нажмите 'ЗАГРУЗИТЬ БАЗУ'.");
     }
 
     function importData() {
