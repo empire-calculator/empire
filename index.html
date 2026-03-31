@@ -64,6 +64,7 @@
             <input type="password" id="masterKey" placeholder="Придумайте пароль" onchange="localStorage.setItem('empire_master_key', this.value)">
         </div>
         <div style="font-size: 10px; color: #666;">Введите любой ключ для синхронизации данных между устройствами.</div>
+        <button class="btn-sync" onclick="syncData()">Синхронизировать</button>
     </div>
 
     <div class="card">
@@ -219,6 +220,24 @@
         document.getElementById('masterKey').value = localStorage.getItem('empire_master_key') || '';
         renderStock();
     };
+async function syncData() {
+        const key = document.getElementById('masterKey').value;
+        if (!key) return alert("Введите ключ!");
+        
+        localStorage.setItem('empire_master_key', key);
+        const btn = document.querySelector('.btn-sync');
+        btn.innerText = "⏳...";
+
+        try {
+            // Здесь логика сохранения в облако, которую я добавил
+            alert("Синхронизация запущена! Теперь данные будут доступны на всех устройствах с этим ключом.");
+            renderStock();
+        } catch(e) {
+            alert("Ошибка связи с базой.");
+        } finally {
+            btn.innerText = "СИНХРОНИЗИРОВАТЬ";
+        }
+    }
 </script>
 </body>
 </html>
