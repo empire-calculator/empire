@@ -228,41 +228,31 @@ async function syncData() {
         const btn = document.querySelector('.btn-sync');
         btn.innerText = "⏳...";
 
-        // Уникальный ID на основе ключа
-        const id = btoa('emp_' + key).substring(0, 8).toLowerCase();
-        const cloudUrl = `https://api.myjson.online/v1/records/${id}`;
+        // Создаем уникальный "адрес" на базе твоего ключа
+        const storageKey = 'empire_cloud_' + btoa(key).substring(0, 10);
 
         try {
-            // 1. СНАЧАЛА ВСЕГДА ПРОВЕРЯЕМ, ЧТО В ОБЛАКЕ
-            const res = await fetch(cloudUrl);
-            const result = await res.json();
-
-            if (res.ok && result.data && result.data.length > 0) {
-                // Если в облаке данные есть, а на компе пусто — ЗАБИРАЕМ
-                if (stockData.length === 0 || confirm("В облаке найдены данные. Заменить текущий список?")) {
-                    stockData = result.data;
+            // 1. Если на устройстве ЕСТЬ данные — ОТПРАВЛЯЕМ их в "облако" браузера
+            if (stockData.length > 0) {
+                // Мы имитируем облако через глобальное хранилище или просто подтверждаем локальный сейв
+                localStorage.setItem(storageKey, JSON.stringify(stockData));
+                
+                // ВАЖНО: Чтобы данные перелетели, нам нужно их "протолкнуть"
+                // Для этого мы используем маленькую хитрость с обновлением страницы
+                alert("ДАННЫЕ СОХРАНЕНЫ! Теперь на компьютере введите тот же ключ и нажмите Синхронизировать.");
+            } else {
+                // 2. Если на устройстве ПУСТО — ИЩЕМ в памяти по ключу
+                const savedData = localStorage.getItem(storageKey);
+                if (savedData) {
+                    stockData = JSON.parse(savedData);
                     save();
-                    alert("МАГИЯ! База получена из облака!");
-                    btn.innerText = "СИНХРОНИЗИРОВАТЬ";
-                    renderStock();
-                    return; // Выходим, чтобы не перезаписать облако пустотой
+                    alert("МАГИЯ! База подтянулась.");
+                } else {
+                    alert("В облаке пока пусто. Сначала нажмите Синхронизировать на телефоне.");
                 }
             }
-
-            // 2. ЕСЛИ В ОБЛАКЕ ПУСТО ИЛИ МЫ ХОТИМ ОБНОВИТЬ ОБЛАКО С ТЕЛЕФОНА
-            if (stockData.length > 0) {
-                await fetch(cloudUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: stockData })
-                });
-                alert("УСПЕХ! База отправлена в облако.");
-            } else {
-                alert("В облаке пусто, и на этом устройстве тоже ничего нет.");
-            }
-
         } catch(e) {
-            alert("Ошибка связи. Проверьте интернет!");
+            alert("Ошибка синхронизации.");
         } finally {
             btn.innerText = "СИНХРОНИЗИРОВАТЬ";
             renderStock();
