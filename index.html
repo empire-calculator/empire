@@ -58,9 +58,13 @@
         <div style="font-size: 0.7em; color: var(--berry); font-weight: 700;">КОВАЛЁВА • ИМПЕРИЯ УКРАШЕНИЙ</div>
     </div>
 
-    <div class="sync-panel" style="display: flex; gap: 10px; background: #fffaf0; border: 1px solid #d4af37; padding: 15px; margin-bottom: 20px;">
-        <button onclick="exportData()" style="flex: 1; background: #444; color: white; padding: 10px; font-size: 9px; cursor: pointer;">📤 СКОПИРОВАТЬ БАЗУ</button>
-        <button onclick="importData()" style="flex: 1; background: var(--berry); color: white; padding: 10px; font-size: 9px; cursor: pointer;">📥 ЗАГРУЗИТЬ БАЗУ</button>
+    <div class="sync-panel">
+        <div class="sync-row">
+            <label style="color:var(--berry); margin:0; font-size: 10px;">🔑 МАСТЕР-КЛЮЧ:</label>
+            <input type="password" id="masterKey" placeholder="Придумайте пароль" onchange="localStorage.setItem('empire_master_key', this.value)">
+        </div>
+        <div style="font-size: 10px; color: #666;">Введите любой ключ для синхронизации данных между устройствами.</div>
+        <button class="btn-sync" onclick="syncData()">Синхронизировать</button>
     </div>
 
     <div class="card">
@@ -124,29 +128,20 @@
 </div>
 
 <script>
-    // 1. ЗАГРУЗКА С ПРОВЕРКОЙ (замени первую строку этим)
-    let stockData = [];
-    try {
-        const saved = localStorage.getItem('empire_v2');
-        if (saved && saved !== "[]") {
-            stockData = JSON.parse(saved);
-        }
-    } catch (e) {
-        console.error("Ошибка загрузки базы:", e);
-    }
     // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
     const quotes = [
         { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
-        { t: "«Создайте свой собственный стиль. Пусть он будет уникальным для вас»", a: "Анна Винтур" },
+        { t: "«Чтобы быть незаменимой, нужно постоянно меняться»", a: "Коко Шанель" },
         { t: "«Мода — это не только платья. Мода — это то, что в воздухе»", a: "Коко Шанель" },
         { t: "«Элегантность — это единственный тип красоты, который никогда не увядает»", a: "Одри Хепберн" },
         { t: "«У вас не будет второго шанса произвести первое впечатление»", a: "Коко Шанель" },
-        { t: "«Настоящая роскошь требует настоящих материалов и искренности мастера»", a: "Кристиан Диор" },
-        { t: "«Успех — это способность шагать от неудачи к неудаче, не теряя энтузиазма»", a: "Уинстон Черчилль" },
-        { t: "«Женщине нужны украшения, чтобы напоминать ей о том, как она прекрасна»", a: "Дженнифер Лопес" },
-        { t: "«Элегантность не в том, чтобы выделяться, а в том, чтобы запоминаться»", a: "Джорджо Армани" },
+        { t: "«Я не занимаюсь модой. Я сама — мода»", a: "Коко Шанель" },
+        { t: "«Красота начинает проявляться тогда, когда вы решаете быть собой»", a: "Коко Шанель" }
     ];
- function setQuote() {
+
+    let stockData = JSON.parse(localStorage.getItem('empire_v2')) || [];
+
+    function setQuote() {
         const q = quotes[Math.floor(Math.random() * quotes.length)];
         document.getElementById('qText').innerText = q.t;
         document.getElementById('qAuthor').innerText = q.a;
@@ -158,37 +153,12 @@
     }
 
     function addItemToStock() {
-        const nInput = document.getElementById('itemName'), 
-              pInput = document.getElementById('itemPrice'), 
-              qInput = document.getElementById('itemQty'), 
-              uInput = document.getElementById('itemUnit');
-
-        const n = nInput.value, 
-              p = parseFloat(pInput.value), 
-              q = parseFloat(qInput.value),
-              u = uInput.value;
-
-        // Проверка: если поля пустые, ничего не делать
-        if(!n || isNaN(p) || isNaN(q)) return alert("Заполни все поля!");
-
-        // ДОБАВЛЯЕМ В БАЗУ (теперь всё в одной команде)
-        stockData.push({ 
-            id: Date.now(), 
-            name: n, 
-            unitPrice: p / q, 
-            qty: q, 
-            originalQty: q, // ТЕПЕРЬ ОНО ТОЧНО ТУТ!
-            unit: u 
-        });
-
-        save();          // Сохраняем в память
-        renderStock();   // Сразу показываем в таблице внизу
-        updateSelectors(); // Сразу добавляем в список выбора в калькуляторе
-
-        // Очищаем поля ввода
-        nInput.value = ''; 
-        pInput.value = ''; 
-        qInput.value = '';
+        const nInput = document.getElementById('itemName'), pInput = document.getElementById('itemPrice'), qInput = document.getElementById('itemQty'), uInput = document.getElementById('itemUnit');
+        const n = nInput.value, p = parseFloat(pInput.value), q = parseFloat(qInput.value);
+        if(!n || isNaN(p) || isNaN(q)) return alert("Заполни поля!");
+        stockData.push({ id: Date.now(), name: n, unitPrice: p/q, qty: q, unit: uInput.value });
+        save();
+        nInput.value = ''; pInput.value = ''; qInput.value = '';
     }
 
     function renderStock() {
@@ -197,10 +167,7 @@
             body.innerHTML += `<tr style="${i.qty <= 0 ? 'color:red' : ''}">
                 <td><b>${i.name}</b></td>
                 <td>${i.qty} ${i.unit}</td>
-                <td><span class="unit-price-tag">
-                    ${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}
-                    ${(i.unit.toLowerCase().trim() === 'метр') ? ` <small style="color:#888">(${Math.round(i.unitPrice)/100} ₽/см)</small>` : ''}
-                </span></td>
+                <td><span class="unit-price-tag">${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}</span></td>
                 <td style="text-align:right; color:#ccc; cursor:pointer;" onclick="deleteItem(${i.id})">✕</td></tr>`;
         });
         updateSelectors(); runCalc();
@@ -213,68 +180,33 @@
             const v = s.value;
             // ТЕПЕРЬ ТУТ ОТОБРАЖАЕТСЯ ЦЕНА ЗА ЕДИНИЦУ ПРЯМО ПРИ ВЫБОРЕ
             s.innerHTML = '<option value="">Выбрать материал...</option>' + 
-                stockData.map(i => {
-                    // Проверяем, метр ли это
-                    const isMeter = i.unit.toLowerCase().trim() === 'метр';
-                    // Формируем текст цены: если метр, добавляем (0.41 ₽/см)
-                    const priceText = isMeter 
-                        ? `${Math.round(i.unitPrice)} ₽/${i.unit} (${Math.round(i.unitPrice)/100} ₽/см)` 
-                        : `${Math.round(i.unitPrice)} ₽/${i.unit}`;
-                    
-                    return `<option value="${i.id}">${i.name} — ${priceText}</option>`;
-                }).join('');
-s.value = v; // Возвращаем выбранное значение на место
+                stockData.map(i => `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit})</option>`).join('');
+            s.value = v;
         });
     }
+
     function addNewRow() {
         const div = document.createElement('div'); div.className = 'calc-row';
         div.innerHTML = `<select class="row-select" onchange="runCalc()"></select><input type="number" class="row-qty" placeholder="Кол" oninput="runCalc()"><span style="cursor:pointer; padding-left:10px" onclick="this.parentElement.remove(); runCalc()">✕</span>`;
         document.getElementById('calculatorRows').appendChild(div); updateSelectors();
     }
 
- function runCalc() {
-        stockData.forEach(i => i.qty = parseFloat(i.originalQty) || i.qty);
-        let m = 0; 
-        document.querySelectorAll('.calc-row').forEach(r => {
-            const id = r.querySelector('.row-select').value;
-            const q = parseFloat(r.querySelector('.row-qty').value) || 0;
-            const item = stockData.find(x => x.id == id);
-            
-            if (item) {
-                const unit = item.unit.toLowerCase().trim();
-                const isMeter = (unit === 'м' || unit === 'метр' || unit === 'метры' || unit === 'м.');
-
-                if (isMeter) {
-                    let consumed = parseFloat(q) / 100; 
-                    let start = parseFloat(item.originalQty) || 0;
-                    item.qty = start - consumed;
-                    m += (parseFloat(item.unitPrice) / 100) * q;
-                } else {
-                    let start = parseFloat(item.originalQty) || 0;
-                    item.qty = start - q;
-                    m += parseFloat(item.unitPrice) * q;
-                }
-            }
-        }); // Здесь закрыли цикл
-
-        const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value) || 0,
-              pk = parseFloat(document.getElementById('inputPack').value) || 0, 
-              mk = parseFloat(document.getElementById('inputMark').value) || 1,
-              tx = parseFloat(document.getElementById('inputTax').value) || 0, 
-              ds = parseFloat(document.getElementById('inputDisc').value) || 0;
-
-        const base = (m * mk) + w + pk, 
-              full = tx < 100 ? base / (1 - (tx / 100)) : base, 
-              final = full * (1 - (ds / 100));
-
+    function runCalc() {
+        let m = 0; document.querySelectorAll('.calc-row').forEach(r => {
+            const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, item = stockData.find(x => x.id == id);
+            if(item) m += item.unitPrice * q;
+        });
+        const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value),
+              pk = parseFloat(document.getElementById('inputPack').value) || 0, mk = parseFloat(document.getElementById('inputMark').value) || 1,
+              tx = parseFloat(document.getElementById('inputTax').value) || 0, ds = parseFloat(document.getElementById('inputDisc').value) || 0;
+        const base = (m * mk) + w + pk, full = tx < 100 ? base / (1 - (tx / 100)) : base, final = full * (1 - (ds / 100));
         document.getElementById('displayOldPrice').innerText = ds > 0 ? Math.round(full) + " ₽" : "";
         document.getElementById('displayFinal').innerText = Math.round(final) + " ₽";
         document.getElementById('resCost').innerText = Math.round(m + pk) + " ₽";
         document.getElementById('resProfit').innerText = Math.round(final - (m + pk) - (final * (tx/100))) + " ₽";
         document.getElementById('resTax').innerText = Math.round(final * (tx/100)) + " ₽";
-        
-        renderStock();
-    } // Конец функции runCalc
+    }
+
     function confirmDeduction() {
         document.querySelectorAll('.calc-row').forEach(r => {
             const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, i = stockData.find(x => x.id == id);
@@ -284,54 +216,51 @@ s.value = v; // Возвращаем выбранное значение на м
     }
 
     window.onload = () => {
-        // 1. ПЕРВЫМ ДЕЛОМ рисуем базу (теперь она в приоритете)
-        if (typeof renderStock === "function") {
-            renderStock();
-        }
-
-        // 2. Остальное — в защищенном блоке (чтобы ошибки не мешали базе)
-        try {
-            if (typeof setQuote === "function") {
-                setQuote();
-            }
-            
-            const mkInput = document.getElementById('masterKey');
-            if (mkInput) {
-                mkInput.value = localStorage.getItem('empire_master_key') || '';
-            }
-        } catch (e) {
-            console.warn("Ошибка в доп. элементах, но база загружена:", e);
-        }
+        setQuote(); // Цитата выбирается сразу при загрузке
+        document.getElementById('masterKey').value = localStorage.getItem('empire_master_key') || '';
+        renderStock();
     };
-function exportData() {
-        if (stockData.length === 0) return alert("База пуста, нечего копировать!");
-        // Превращаем базу в зашифрованную строку
-        const dataStr = btoa(unescape(encodeURIComponent(JSON.stringify(stockData))));
+async function syncData() {
+        const key = document.getElementById('masterKey').value;
+        if (!key) return alert("Введите ключ!");
+        localStorage.setItem('empire_master_key', key);
         
-        // Пытаемся скопировать в буфер обмена
-        const el = document.createElement('textarea');
-        el.value = dataStr;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        
-        alert("ГОТОВО! Код базы скопирован в память устройства. \n\nОтправьте этот длинный текст себе в Телеграм/Max, скопируйте его на компьютере/телефоне и нажмите 'ЗАГРУЗИТЬ БАЗУ'.");
-    }
+        const btn = document.querySelector('.btn-sync');
+        const status = document.getElementById('syncStatus'); // если добавишь поле ниже
+        btn.innerText = "⏳...";
 
-    function importData() {
-        const code = prompt("Вставьте код базы, который вы переслали с телефона:");
-        if (!code) return;
+        // Создаем уникальный адрес для твоей базы на основе ключа
+        const cloudUrl = `https://jsonbin.org/empire-calc-${btoa(key).substring(0,10)}`;
+
         try {
-            const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
-            if (Array.isArray(decoded)) {
-                stockData = decoded;
-                save();
-                alert("МАГИЯ! " + stockData.length + " поз. фурнитуры перенесено успешно.");
-                renderStock();
+            // 1. Сначала пробуем отправить то, что есть на этом устройстве, в облако
+            if (stockData.length > 0) {
+                await fetch(cloudUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockData)
+                });
+                alert("Данные успешно отправлены в облако! Теперь на другом устройстве введи этот же ключ и нажми Синхронизировать.");
+            } else {
+                // 2. Если на этом устройстве пусто, пробуем скачать из облака
+                const response = await fetch(cloudUrl);
+                if (response.ok) {
+                    const cloudData = await response.json();
+                    if (cloudData && cloudData.length > 0) {
+                        stockData = cloudData;
+                        save();
+                        alert("База получена из облака!");
+                    }
+                } else {
+                    alert("В облаке пока пусто. Сначала нажми Синхронизировать на телефоне, где есть база.");
+                }
             }
         } catch(e) {
-            alert("Ошибка! Код скопирован не полностью или поврежден.");
+            console.log(e);
+            alert("Ключ сохранен локально. Для облачной синхронизации проверь интернет.");
+        } finally {
+            btn.innerText = "СИНХРОНИЗИРОВАТЬ";
+            renderStock();
         }
     }
 </script>
