@@ -192,11 +192,14 @@
         document.querySelectorAll('.row-select').forEach(s => {
             const v = s.value;
             s.innerHTML = '<option value="">Выбрать материал...</option>' + 
-                stockData.map(i => `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit})</option>`).join('');
+              stockData.map(i => {
+                    // Если это метр, добавляем в скобки цену за 1 см для удобства
+                    const extra = i.unit === 'метр' ? ` | ${Math.round(i.unitPrice/100 * 100) / 100} ₽/см` : '';
+                    return `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit}${extra})</option>`;
+                }).join('');
             s.value = v;
         });
     }
-
     function addNewRow() {
         const div = document.createElement('div'); div.className = 'calc-row';
         div.innerHTML = `<select class="row-select" onchange="runCalc()"></select><input type="number" class="row-qty" placeholder="Кол" oninput="runCalc()"><span style="cursor:pointer; padding-left:10px" onclick="this.parentElement.remove(); runCalc()">✕</span>`;
