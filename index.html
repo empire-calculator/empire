@@ -242,18 +242,26 @@ s.value = v; // Возвращаем выбранное значение на м
 if (item) {
             const unit = item.unit.toLowerCase().trim();
             const isMeter = (unit === 'м' || unit === 'метр' || unit === 'метры' || unit === 'м.');
-let startQty = parseFloat(item.originalQty) || parseFloat(item.qty) || 0;
-           if (isMeter) {
-                    // ВАЖНО: сначала делим расход (50см) на 100, чтобы получить 0.5м
-                    let consumed = q / 100; 
-                    item.qty = item.originalQty - consumed; // Вычитаем из ИЗНАЧАЛЬНОГО веса
-                    
-                    m += (item.unitPrice / 100) * q; // Считаем цену за см
-                } else {
-                    item.qty = item.originalQty - q; 
-                    m += item.unitPrice * q;
-                }
-        }
+
+          if (isMeter) {
+                // 1. Превращаем 50см в 0.5м
+                let consumed = parseFloat(q) / 100; 
+                
+                // 2. Берем ЧИСТОЕ число из закупки (5)
+                let start = parseFloat(item.originalQty) || 0;
+                
+                // 3. Считаем остаток (5 - 0.5 = 4.5)
+                item.qty = start - consumed;
+                
+                // 4. Считаем деньги за сантиметры
+                m += (parseFloat(item.unitPrice) / 100) * q;
+            } else {
+                // Для штук и грамм
+                let start = parseFloat(item.originalQty) || 0;
+                item.qty = start - q;
+                m += parseFloat(item.unitPrice) * q;
+            }
+            });
         const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value),
               pk = parseFloat(document.getElementById('inputPack').value) || 0, mk = parseFloat(document.getElementById('inputMark').value) || 1,
               tx = parseFloat(document.getElementById('inputTax').value) || 0, ds = parseFloat(document.getElementById('inputDisc').value) || 0;
@@ -264,7 +272,6 @@ let startQty = parseFloat(item.originalQty) || parseFloat(item.qty) || 0;
         document.getElementById('resProfit').innerText = Math.round(final - (m + pk) - (final * (tx/100))) + " ₽";
         document.getElementById('resTax').innerText = Math.round(final * (tx/100)) + " ₽";
             renderStock();
-    }
     }
     function confirmDeduction() {
         document.querySelectorAll('.calc-row').forEach(r => {
