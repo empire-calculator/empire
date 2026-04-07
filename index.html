@@ -124,7 +124,6 @@
 </div>
 
 <script>
-    // 1. ЗАГРУЗКА С ПРОВЕРКОЙ (замени первую строку этим)
     let stockData = [];
     try {
         const saved = localStorage.getItem('empire_v2');
@@ -134,7 +133,7 @@
     } catch (e) {
         console.error("Ошибка загрузки базы:", e);
     }
-    // 1. ВЕРНУЛА ТВОЙ СПИСОК ЦИТАТ
+
     const quotes = [
         { t: "«Мода проходит, стиль остается»", a: "Коко Шанель" },
         { t: "«Создайте свой собственный стиль. Пусть он будет уникальным для вас»", a: "Анна Винтур" },
@@ -146,7 +145,8 @@
         { t: "«Женщине нужны украшения, чтобы напоминать ей о том, как она прекрасна»", a: "Дженнифер Лопес" },
         { t: "«Элегантность не в том, чтобы выделяться, а в том, чтобы запоминаться»", a: "Джорджо Армани" },
     ];
- function setQuote() {
+
+    function setQuote() {
         const q = quotes[Math.floor(Math.random() * quotes.length)];
         document.getElementById('qText').innerText = q.t;
         document.getElementById('qAuthor').innerText = q.a;
@@ -158,10 +158,14 @@
     }
 
     function addItemToStock() {
-        const nInput = document.getElementById('itemName'), pInput = document.getElementById('itemPrice'), qInput = document.getElementById('itemQty'), uInput = document.getElementById('itemUnit');
-        const n = nInput.value, p = parseFloat(pInput.value), q = parseFloat(qInput.value);
+        const nInput = document.getElementById('itemName'), 
+              pInput = document.getElementById('itemPrice'), 
+              qInput = document.getElementById('itemQty'), 
+              uInput = document.getElementById('itemUnit');
+        const n = nInput.value, p = parseFloat(pInput.value), q = parseFloat(qInput.value), u = uInput.value;
         if(!n || isNaN(p) || isNaN(q)) return alert("Заполни поля!");
-        stockData.push({ id: Date.now(), name: n, unitPrice: p/q, qty: q, unit: uInput.value });
+        
+        stockData.push({ id: Date.now(), name: n, unitPrice: p/q, qty: q, unit: u });
         save();
         nInput.value = ''; pInput.value = ''; qInput.value = '';
     }
@@ -169,13 +173,17 @@
     function renderStock() {
         const body = document.getElementById('stockTableBody'); body.innerHTML = '';
         stockData.forEach(i => {
+            const isLong = (i.unit === 'метр' || i.unit === 'см');
             body.innerHTML += `<tr style="${i.qty <= 0 ? 'color:red' : ''}">
                 <td><b>${i.name}</b></td>
                 <td>${i.qty} ${i.unit}</td>
-                <td><span class="unit-price-tag">${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}</span></td>
+                <td><span class="unit-price-tag">
+                    ${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}
+                    ${i.unit === 'метр' ? ` <small>(${Math.round(i.unitPrice)/100} ₽/см)</small>` : ''}
+                </span></td>
                 <td style="text-align:right; color:#ccc; cursor:pointer;" onclick="deleteItem(${i.id})">✕</td></tr>`;
         });
-        updateSelectors(); runCalc();
+        updateSelectors();
     }
 
     function deleteItem(id) { if(confirm('Удалить?')) { stockData = stockData.filter(i => i.id !== id); save(); } }
@@ -183,7 +191,6 @@
     function updateSelectors() {
         document.querySelectorAll('.row-select').forEach(s => {
             const v = s.value;
-            // ТЕПЕРЬ ТУТ ОТОБРАЖАЕТСЯ ЦЕНА ЗА ЕДИНИЦУ ПРЯМО ПРИ ВЫБОРЕ
             s.innerHTML = '<option value="">Выбрать материал...</option>' + 
                 stockData.map(i => `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit})</option>`).join('');
             s.value = v;
@@ -197,30 +204,32 @@
     }
 
     function runCalc() {
-        let m = 0; document.querySelectorAll('.calc-row').forEach(r => {
-            const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, item = stockData.find(x => x.id == id);
-            if(item) m += item.unitPrice * q;
-   function runCalc() {
         let m = 0; 
         document.querySelectorAll('.calc-row').forEach(r => {
             const id = r.querySelector('.row-select').value;
             const q = parseFloat(r.querySelector('.row-qty').value) || 0;
             const item = stockData.find(x => x.id == id);
-
             if (item) {
-                // Если единица измерения "м" (метр), то считаем количество как сантиметры
-                if (item.unit === 'м') {
-                    m += (item.unitPrice / 100) * q; 
+                if (item.unit === 'метр' || item.unit === 'см') {
+                    // Если закупка в метрах, а вводим см — делим цену метра на 100
+                    const pricePerCm = item.unit === 'метр' ? item.unitPrice / 100 : item.unitPrice;
+                    m += pricePerCm * q;
                 } else {
-                    // Для жемчуга, замков и прочего (где штуки) считаем как обычно
                     m += item.unitPrice * q;
                 }
             }
         });
-        const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value),
-              pk = parseFloat(document.getElementById('inputPack').value) || 0, mk = parseFloat(document.getElementById('inputMark').value) || 1,
-  tx = parseFloat(document.getElementById('inputTax').value) || 0, ds = parseFloat(document.getElementById('inputDisc').value) || 0;
-        const base = (m * mk) + w + pk, full = tx < 100 ? base / (1 - (tx / 100)) : base, final = full * (1 - (ds / 100));
+
+        const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value) || 0;
+        const pk = parseFloat(document.getElementById('inputPack').value) || 0;
+        const mk = parseFloat(document.getElementById('inputMark').value) || 1;
+        const tx = parseFloat(document.getElementById('inputTax').value) || 0;
+        const ds = parseFloat(document.getElementById('inputDisc').value) || 0;
+
+        const base = (m * mk) + w + pk;
+        const full = tx < 100 ? base / (1 - (tx / 100)) : base;
+        const final = full * (1 - (ds / 100));
+
         document.getElementById('displayOldPrice').innerText = ds > 0 ? Math.round(full) + " ₽" : "";
         document.getElementById('displayFinal').innerText = Math.round(final) + " ₽";
         document.getElementById('resCost').innerText = Math.round(m + pk) + " ₽";
@@ -230,62 +239,47 @@
 
     function confirmDeduction() {
         document.querySelectorAll('.calc-row').forEach(r => {
-            const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, i = stockData.find(x => x.id == id);
-            if(i) i.qty = Math.round((i.qty - q) * 100) / 100;
+            const id = r.querySelector('.row-select').value;
+            const q = parseFloat(r.querySelector('.row-qty').value) || 0;
+            const i = stockData.find(x => x.id == id);
+            if(i) {
+                // Если списываем сантиметры из метров
+                const deduction = (i.unit === 'метр') ? q / 100 : q;
+                i.qty = Math.round((i.qty - deduction) * 100) / 100;
+            }
         });
-        save(); alert('Готово! Сокровищница обновлена.');
+        save(); 
+        alert('Готово! Сокровищница обновлена.');
     }
 
     window.onload = () => {
-        // 1. ПЕРВЫМ ДЕЛОМ рисуем базу (теперь она в приоритете)
-        if (typeof renderStock === "function") {
-            renderStock();
-        }
-
-        // 2. Остальное — в защищенном блоке (чтобы ошибки не мешали базе)
-        try {
-            if (typeof setQuote === "function") {
-                setQuote();
-            }
-
-            const mkInput = document.getElementById('masterKey');
-            if (mkInput) {
-                mkInput.value = localStorage.getItem('empire_master_key') || '';
-            }
-        } catch (e) {
-            console.warn("Ошибка в доп. элементах, но база загружена:", e);
-        }
+        renderStock();
+        setQuote();
     };
-function exportData() {
-        if (stockData.length === 0) return alert("База пуста, нечего копировать!");
-        // Превращаем базу в зашифрованную строку
-        const dataStr = btoa(unescape(encodeURIComponent(JSON.stringify(stockData))));
 
-        // Пытаемся скопировать в буфер обмена
+    function exportData() {
+        if (stockData.length === 0) return alert("База пуста!");
+        const dataStr = btoa(unescape(encodeURIComponent(JSON.stringify(stockData))));
         const el = document.createElement('textarea');
         el.value = dataStr;
         document.body.appendChild(el);
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-
-        alert("ГОТОВО! Код базы скопирован в память устройства. \n\nОтправьте этот длинный текст себе в Телеграм/Max, скопируйте его на компьютере/телефоне и нажмите 'ЗАГРУЗИТЬ БАЗУ'.");
+        alert("Код базы скопирован!");
     }
 
     function importData() {
-        const code = prompt("Вставьте код базы, который вы переслали с телефона:");
+        const code = prompt("Вставьте код базы:");
         if (!code) return;
         try {
             const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
             if (Array.isArray(decoded)) {
                 stockData = decoded;
                 save();
-                alert("МАГИЯ! " + stockData.length + " поз. фурнитуры перенесено успешно.");
-                renderStock();
+                alert("Успешно загружено " + stockData.length + " поз.");
             }
-        } catch(e) {
-            alert("Ошибка! Код скопирован не полностью или поврежден.");
-        }
+        } catch(e) { alert("Ошибка кода!"); }
     }
 </script>
 </body>
