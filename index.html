@@ -188,11 +188,19 @@
             const v = s.value;
             // ТЕПЕРЬ ТУТ ОТОБРАЖАЕТСЯ ЦЕНА ЗА ЕДИНИЦУ ПРЯМО ПРИ ВЫБОРЕ
             s.innerHTML = '<option value="">Выбрать материал...</option>' + 
-                stockData.map(i => `<option value="${i.id}">${i.name} (${Math.round(i.unitPrice)} ₽/${i.unit})</option>`).join('');
-            s.value = v;
+                stockData.map(i => {
+                    // Проверяем, метр ли это
+                    const isMeter = i.unit.toLowerCase().trim() === 'метр';
+                    // Формируем текст цены: если метр, добавляем (0.41 ₽/см)
+                    const priceText = isMeter 
+                        ? `${Math.round(i.unitPrice)} ₽/${i.unit} (${Math.round(i.unitPrice)/100} ₽/см)` 
+                        : `${Math.round(i.unitPrice)} ₽/${i.unit}`;
+                    
+                    return `<option value="${i.id}">${i.name} — ${priceText}</option>`;
+                }).join('');
+s.value = v; // Возвращаем выбранное значение на место
         });
     }
-
     function addNewRow() {
         const div = document.createElement('div'); div.className = 'calc-row';
         div.innerHTML = `<select class="row-select" onchange="runCalc()"></select><input type="number" class="row-qty" placeholder="Кол" oninput="runCalc()"><span style="cursor:pointer; padding-left:10px" onclick="this.parentElement.remove(); runCalc()">✕</span>`;
