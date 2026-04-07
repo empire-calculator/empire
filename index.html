@@ -243,17 +243,16 @@ if (item) {
             const unit = item.unit.toLowerCase().trim();
             const isMeter = (unit === 'м' || unit === 'метр' || unit === 'метры' || unit === 'м.');
 
-            if (isMeter) {
-                item.qty -= (q / 100); 
-            } else {
-                item.qty -= q; 
-            }
-
-            if (isMeter) {
-                m += (item.unitPrice / 100) * q;
-            } else {
-                m += item.unitPrice * q;
-            }
+           if (isMeter) {
+                    // ВАЖНО: сначала делим расход (50см) на 100, чтобы получить 0.5м
+                    let consumed = q / 100; 
+                    item.qty = item.originalQty - consumed; // Вычитаем из ИЗНАЧАЛЬНОГО веса
+                    
+                    m += (item.unitPrice / 100) * q; // Считаем цену за см
+                } else {
+                    item.qty = item.originalQty - q; 
+                    m += item.unitPrice * q;
+                }
         }
             })
         const w = (parseFloat(document.getElementById('inputWork').value)/60) * parseFloat(document.getElementById('inputRate').value),
