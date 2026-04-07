@@ -242,7 +242,7 @@ s.value = v; // Возвращаем выбранное значение на м
 if (item) {
             const unit = item.unit.toLowerCase().trim();
             const isMeter = (unit === 'м' || unit === 'метр' || unit === 'метры' || unit === 'м.');
-
+let startQty = parseFloat(item.originalQty) || parseFloat(item.qty) || 0;
            if (isMeter) {
                     // ВАЖНО: сначала делим расход (50см) на 100, чтобы получить 0.5м
                     let consumed = q / 100; 
@@ -263,7 +263,8 @@ if (item) {
         document.getElementById('resCost').innerText = Math.round(m + pk) + " ₽";
         document.getElementById('resProfit').innerText = Math.round(final - (m + pk) - (final * (tx/100))) + " ₽";
         document.getElementById('resTax').innerText = Math.round(final * (tx/100)) + " ₽";
-       })
+            renderStock();
+    }
     }
     function confirmDeduction() {
         document.querySelectorAll('.calc-row').forEach(r => {
