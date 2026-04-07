@@ -158,12 +158,37 @@
     }
 
     function addItemToStock() {
-        const nInput = document.getElementById('itemName'), pInput = document.getElementById('itemPrice'), qInput = document.getElementById('itemQty'), uInput = document.getElementById('itemUnit');
-        const n = nInput.value, p = parseFloat(pInput.value), q = parseFloat(qInput.value);
-        if(!n || isNaN(p) || isNaN(q)) return alert("Заполни поля!");
-        stockData.push({ id: Date.now(), name: n, unitPrice: p/q, qty: q, unit: uInput.value });
-        save();
-        nInput.value = ''; pInput.value = ''; qInput.value = '';
+        const nInput = document.getElementById('itemName'), 
+              pInput = document.getElementById('itemPrice'), 
+              qInput = document.getElementById('itemQty'), 
+              uInput = document.getElementById('itemUnit');
+
+        const n = nInput.value, 
+              p = parseFloat(pInput.value), 
+              q = parseFloat(qInput.value),
+              u = uInput.value;
+
+        // Проверка: если поля пустые, ничего не делать
+        if(!n || isNaN(p) || isNaN(q)) return alert("Заполни все поля!");
+
+        // ДОБАВЛЯЕМ В БАЗУ (теперь всё в одной команде)
+        stockData.push({ 
+            id: Date.now(), 
+            name: n, 
+            unitPrice: p / q, 
+            qty: q, 
+            originalQty: q, // ТЕПЕРЬ ОНО ТОЧНО ТУТ!
+            unit: u 
+        });
+
+        save();          // Сохраняем в память
+        renderStock();   // Сразу показываем в таблице внизу
+        updateSelectors(); // Сразу добавляем в список выбора в калькуляторе
+
+        // Очищаем поля ввода
+        nInput.value = ''; 
+        pInput.value = ''; 
+        qInput.value = '';
     }
 
     function renderStock() {
@@ -208,6 +233,7 @@ s.value = v; // Возвращаем выбранное значение на м
     }
 
    function runCalc() {
+       stockData.forEach(i => i.qty = parseFloat(i.originalQty) || i.qty);
         let m = 0; 
         document.querySelectorAll('.calc-row').forEach(r => {
             const id = r.querySelector('.row-select').value;
