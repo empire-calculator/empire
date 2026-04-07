@@ -172,7 +172,10 @@
             body.innerHTML += `<tr style="${i.qty <= 0 ? 'color:red' : ''}">
                 <td><b>${i.name}</b></td>
                 <td>${i.qty} ${i.unit}</td>
-                <td><span class="unit-price-tag">${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}</span></td>
+                <td><span class="unit-price-tag">
+                    ${Math.round(i.unitPrice * 100) / 100} ₽/${i.unit}
+                    ${(i.unit.toLowerCase().trim() === 'метр') ? ` <small style="color:#888">(${Math.round(i.unitPrice)/100} ₽/см)</small>` : ''}
+                </span></td>
                 <td style="text-align:right; color:#ccc; cursor:pointer;" onclick="deleteItem(${i.id})">✕</td></tr>`;
         });
         updateSelectors(); runCalc();
