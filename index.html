@@ -265,8 +265,8 @@ if (item) {
         document.getElementById('resCost').innerText = Math.round(m + pk) + " ₽";
         document.getElementById('resProfit').innerText = Math.round(final - (m + pk) - (final * (tx/100))) + " ₽";
         document.getElementById('resTax').innerText = Math.round(final * (tx/100)) + " ₽";
+renderStock(); 
     }
-
     function confirmDeduction() {
         document.querySelectorAll('.calc-row').forEach(r => {
             const id = r.querySelector('.row-select').value, q = parseFloat(r.querySelector('.row-qty').value) || 0, i = stockData.find(x => x.id == id);
