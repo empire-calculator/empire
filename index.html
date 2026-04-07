@@ -203,13 +203,13 @@
             const q = parseFloat(r.querySelector('.row-qty').value) || 0;
             const item = stockData.find(x => x.id == id);
 
+            cript
             if (item) {
-                // Приводим единицу измерения к нижнему регистру и убираем лишние пробелы
                 const unit = item.unit.toLowerCase().trim();
                 
-                // Если это метр (м, метр, м.), делим цену на 100
-                if (unit === 'м' || unit === 'метр' || unit === 'м.') {
-                    m += (item.unitPrice / 100) * q; 
+                // Проверяем все возможные варианты из твоего списка
+                if (unit === 'м' || unit === 'метр' || unit === 'метры' || unit === 'м.') {
+                    m += (item.unitPrice / 100) * q;
                 } else {
                     m += item.unitPrice * q;
                 }
